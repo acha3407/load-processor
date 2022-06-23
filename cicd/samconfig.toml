@@ -1,0 +1,7 @@
+version=0.1
+[default.deploy.parameters]
+stack_name = "batch-load-processor-stack-v2"
+s3_bucket = "cdp-ci-dev-1"
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"

@@ -1,0 +1,31 @@
+{
+  "Comment": "load-processor step function",
+  "StartAt": "TriggerLambda",
+  "States": {
+    "TriggerLambda": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "${TriggerLambdaArn}"
+      },
+      "Next": "SubmitJob"
+    },
+    "SubmitJob": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::batch:submitJob.sync",
+      "Parameters": {
+        "JobName": "sp-batch-job",
+        "JobDefinition": "${JOBDefinitionArn}",
+        "JobQueue": "${JOBQueueArn}",
+        "Parameters": {
+          "token.$":"States.Format('\\{ \"customToken\" : \"{}\", \"customUrl\" : \"{}\" \\}', $.token, $.apiUrl)",
+          "authenticationScheme.$": "$.authenticationScheme",
+          "apiUrl.$": "$.apiUrl"
+        }
+      },
+      "End": true
+    }
+  }
+}

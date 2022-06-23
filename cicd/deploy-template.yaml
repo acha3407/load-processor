@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "Create Load Batch processor"
+Globals:
+  Function:
+    Tags:
+      Technical:ApplicationID: APP-001
+      Technical:ApplicationName: AshCorp-Load_Processor-App
+      Technical:PlatformOwner: ashanchandrasiri1@gmail.com
+Resources:
+  LoadTriggerLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "load-trigger-lambda-v-3"
+      CodeUri: "s3://cdp-cd-dev-1/release/cdp-code-build/ashcorp-load-trigger-lambda-0.0.3.jar"
+      Handler: "com.ashcorp.batch.loadprocessor.InitialTriggerLambdaHandler::handleRequest"
+      Runtime: "java11"
+      MemorySize: 512
+      Timeout: 300
+
+  BatchProcessorDefinition:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      Type: "container"
+      JobDefinitionName: batch-processor-definition
+      PlatformCapabilities:
+        - EC2
+      ContainerProperties:
+        Image: ashan97/aws-load-processor:v0.03
+        Memory: 1024
+        Vcpus: 1
+        Command:
+          - java
+          - -jar
+          - /app.jar
+          - Ref::token
+          - Ref::url
+      Parameters:
+        token: sample_token
+        url: https://url.com
+      Timeout:
+        AttemptDurationSeconds: 300
+
+  SAMLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: "load-processor-sf-log-group"
+
+  AshCorpLoadProcessorSF:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: LoadProcessorSF
+      Type: STANDARD
+      DefinitionUri: stepFunctions/batchProcessorSf.json
+      DefinitionSubstitutions:
+        JOBDefinitionArn: !Ref BatchProcessorDefinition
+        JOBQueueArn: "arn:aws:batch:us-east-1:243012948420:job-queue/getting-started-job-queue"
+        TriggerLambdaArn: !GetAtt LoadTriggerLambda.Arn
+      Logging:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt SAMLogs.Arn
+        IncludeExecutionData: true
+        Level: ALL
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadTriggerLambda
+        - EventBridgePutEventsPolicy:
+            EventBusName: default
+        - CloudWatchLogsFullAccess
+        - Statement:
+            - Sid: jobPolicyOne
+              Effect: Allow
+              Action:
+                - 'batch:SubmitJob'
+                - "batch:DescribeJobs"
+                - "batch:TerminateJob"
+              Resource:
+                - !Sub "arn:aws:batch:us-east-1:243012948420:job-queue/getting-started-job-queue"
+                - !Ref BatchProcessorDefinition
+            - Sid: jobPolicyTwo
+              Effect: Allow
+              Action:
+                - 'events:PutTargets'
+                - "events:PutRule"
+                - "events:DescribeRule"
+              Resource: !Ref BatchProcessorDefinition
