@@ -2,13 +2,10 @@ package com.ashcorp.batch.loadprocessor.service.impl;
 
 import com.ashcorp.batch.loadprocessor.service.OktaService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 @Service
 @RequiredArgsConstructor
