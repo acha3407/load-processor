@@ -1,14 +1,21 @@
 package com.ashcorp.batch.loadprocessor;
 
+import com.ashcorp.batch.loadprocessor.service.OktaService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import java.util.concurrent.CompletableFuture;
+
 @SpringBootApplication
+@RequiredArgsConstructor
 public class LoadProcessorApplication implements CommandLineRunner {
 
+    private final OktaService oktaService;
+
     public static void main(String[] args) {
-        SpringApplication.run(LoadProcessorApplication.class, args);
+        SpringApplication.run(LoadProcessorApplication.class, args).close();
     }
 
     @Override
@@ -22,5 +29,11 @@ public class LoadProcessorApplication implements CommandLineRunner {
         }
 
         System.out.println("job ends");
+
+        System.out.println("start bulk data");
+        CompletableFuture<String> response = oktaService.loadBulkData();
+        String res = response.get();
+
+        System.out.println("finished build data : " + res);
     }
 }

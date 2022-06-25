@@ -18,6 +18,16 @@ Resources:
       MemorySize: 512
       Timeout: 300
 
+  BatchProcessorQueue:
+    Type: AWS::Batch::JobQueue
+    Properties:
+      ComputeEnvironmentOrder:
+        - ComputeEnvironment: !Sub "arn:aws:batch:us-east-1:243012948420:compute-environment/getting-started-compute-env"
+          Order: 1
+      JobQueueName: "load-processor-queue"
+      Priority: 120
+      State: "ENABLED"
+
   BatchProcessorDefinition:
     Type: AWS::Batch::JobDefinition
     Properties:
@@ -54,7 +64,7 @@ Resources:
       DefinitionUri: stepFunctions/batchProcessorSf.json
       DefinitionSubstitutions:
         JOBDefinitionArn: !Ref BatchProcessorDefinition
-        JOBQueueArn: "arn:aws:batch:us-east-1:243012948420:job-queue/getting-started-job-queue"
+        JOBQueueArn: !Ref BatchProcessorQueue
         TriggerLambdaArn: !GetAtt LoadTriggerLambda.Arn
       Logging:
         Destinations:
@@ -76,7 +86,7 @@ Resources:
                 - "batch:DescribeJobs"
                 - "batch:TerminateJob"
               Resource:
-                - !Sub "arn:aws:batch:us-east-1:243012948420:job-queue/getting-started-job-queue"
+                - !Ref BatchProcessorQueue
                 - !Ref BatchProcessorDefinition
             - Sid: jobPolicyTwo
               Effect: Allow
@@ -84,4 +94,7 @@ Resources:
                 - 'events:PutTargets'
                 - "events:PutRule"
                 - "events:DescribeRule"
-              Resource: !Ref BatchProcessorDefinition
+              Resource:
+                - !Ref BatchProcessorDefinition
+                - !Ref BatchProcessorQueue
+                - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForBatchJobsRule"
