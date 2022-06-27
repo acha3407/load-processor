@@ -1,4 +1,4 @@
-export APP_VERSION=0.04
+export APP_VERSION=0.05
 
 ./gradlew bootJar
 
